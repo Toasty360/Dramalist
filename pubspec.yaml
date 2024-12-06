@@ -1,7 +1,6 @@
 name: dramalist
-description: "A new Flutter package project."
+description: "MyDramaList Scrapper"
 version: 0.0.1
-homepage:
 
 environment:
   sdk: ^3.7.0-154.0.dev

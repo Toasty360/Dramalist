@@ -88,12 +88,12 @@ List<Drama> upcomingDramas = await DramaList.getDramas(DramaCatalog.upcomingDram
 Fetches detailed information about a specific drama using a path identifier. This method returns a `Future<Drama>` containing the detailed info.
 
 ```dart
-Drama dramaDetails = await DramaList.info("some-drama-path");
+Drama dramaDetails = await DramaList.info("/746993-my-demon");
 ```
 
 ### schedule()
 
-Fetches the schedule of dramas by day. This method returns a `Future<Map<int, List<Drama>>>``, where the key is the day of the week (1-7, corresponding to Monday-Sunday) and the value is a list of dramas airing on that day.
+Fetches the schedule of dramas by day. This method returns a `Future<Map<int, List<Drama>>>`, where the key is the day of the week (1-7, corresponding to Monday-Sunday) and the value is a list of dramas airing on that day.
 
 ```dart
 Map<int, List<Drama>> dramaSchedule = await DramaList.schedule();
