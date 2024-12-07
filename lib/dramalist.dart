@@ -33,6 +33,7 @@ class DramaList {
         rating: data['rating'],
         year: data['year'],
         isEnded: data['ended'],
+        recommendations: [],
       );
     } else {
       throw Exception('Failed to get drama preview');
@@ -102,12 +103,23 @@ class DramaList {
         return '/shows/popular';
       case DramaCatalog.varietyShows:
         return '/shows/variety';
+      case DramaCatalog.topDrams:
+        return '/shows/top';
+      case DramaCatalog.topMovies:
+        return '/movies/top';
+      case DramaCatalog.newestDramas:
+        return '/shows/newest';
+      case DramaCatalog.newestMovies:
+        return '/movies/newest';
     }
   }
 
-  static Future<List<Drama>> getDramas(DramaCatalog catalog) async {
+  static Future<List<Drama>> getDramas(
+    DramaCatalog catalog, {
+    int? page = 1,
+  }) async {
     var endpoint = _getEndpoint(catalog);
-    final response = await _dio.get('$baseUrl$endpoint');
+    final response = await _dio.get('$baseUrl$endpoint&page=$page');
     if (response.statusCode == 200) {
       final data = response.data;
       return _cardScapper(data);
@@ -201,10 +213,20 @@ class DramaList {
           drama.director = e.text.trim().split(":").last.trim();
         }
       });
+
+      drama.aired =
+          doc
+              .querySelector('li[xitemprop="datePublished"]')
+              ?.text
+              .split(":")
+              .last
+              .trim();
+
       drama.poster = images.isNotEmpty ? images.first : "";
       drama.images = images;
       drama.episodes = episodes;
       drama.cast = cast;
+      drama.type = drama.totalEpisodes != null ? "Drama" : "Movie";
       drama.reviews = _getReviews(doc);
       return drama;
     }
@@ -338,5 +360,3 @@ class DramaList {
     return cal;
   }
 }
-
-void main(List<String> args) {}
