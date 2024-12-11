@@ -146,7 +146,7 @@ enum DramaCatalog {
   upcomingDramas,
   popularMovies,
   popularDramas,
-  topDrams,
+  topDramas,
   topMovies,
   varietyShows,
   newestDramas,

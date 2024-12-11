@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:dio/dio.dart';
 import 'package:dramalist/model/drama.dart';
 import 'package:html/dom.dart';
@@ -5,7 +7,7 @@ import 'package:html/parser.dart';
 
 class DramaList {
   static String baseUrl = 'http://140.82.10.197:9080';
-  static final Dio _dio = Dio();
+  static final Dio _dio = Dio(BaseOptions(validateStatus: (status) => true));
 
   static Future<Drama> getPreview(int id) async {
     final response = await _dio.get('$baseUrl/v1/titles/$id');
@@ -42,42 +44,48 @@ class DramaList {
 
   static List<Drama> _cardScapper(String data) {
     var doc = parse(data);
+    List<String>? firstLast = [], countryAndType = [], yearEpisodes = [];
     List<Drama> dramas =
-        doc.querySelectorAll('.container-fluid [id^="mdl-"].box').sublist(0).map((
-          ele,
-        ) {
-          RegExpMatch? match = RegExp(
-            r'^(?<country>[\w\s]+)\s-\s(?<year>\d{4}),\s(?<totalepisodes>\d+)\s+episodes$',
-          ).firstMatch(ele.querySelector("span.text-muted")?.text ?? "");
-          return Drama(
-            url: ele.querySelector('a')?.attributes['href'] ?? "",
-            id: int.parse(ele.id.split("-")[1]),
-            title: ele.querySelector('.title')?.text.trim() ?? "",
-            country: match?.namedGroup("country") ?? "",
-            year: match?.namedGroup("year").toString() ?? "0",
-            totalEpisodes:
-                int.tryParse(
-                  match?.namedGroup("totalepisodes").toString() ?? "0",
-                ) ??
-                0,
-            rating: double.tryParse(
-              ele.querySelector("span.score")?.text.trim() ?? "0",
-            ),
-            description: ele
-                .querySelectorAll("p")
-                .last
-                .text
-                .trim()
-                .replaceAll('\n', " "),
-            rank: int.tryParse(
-              ele.querySelector('.ranking')?.text.trim().replaceAll('#', "") ??
-                  "0",
-            ),
-            cover:
-                ele.querySelector('img.cover')?.attributes['data-src'] ??
-                "not found",
-          );
-        }).toList();
+        doc
+            .querySelectorAll('.container-fluid [id^="mdl-"].box')
+            .sublist(0)
+            .map((ele) {
+              firstLast = ele.querySelector("span.text-muted")?.text.split("-");
+              countryAndType = firstLast?.first.split(" ");
+              yearEpisodes = firstLast?.last.split(",");
+              return Drama(
+                url: ele.querySelector('a')?.attributes['href'] ?? "",
+                id: int.parse(ele.id.split("-")[1]),
+                title: ele.querySelector('.title')?.text.trim(),
+                country: countryAndType?.first.trim(),
+                year: yearEpisodes?.first.trim(),
+                type: countryAndType?.last.trim(),
+                totalEpisodes: int.tryParse(
+                  yearEpisodes?.last.split(" ").first.trim() ?? "0",
+                ),
+                rating: double.tryParse(
+                  ele.querySelector("span.score")?.text.trim() ?? "0",
+                ),
+                description: ele
+                    .querySelectorAll("p")
+                    .last
+                    .text
+                    .trim()
+                    .replaceAll('\n', " "),
+                rank: int.tryParse(
+                  ele
+                          .querySelector('.ranking')
+                          ?.text
+                          .trim()
+                          .replaceAll('#', "") ??
+                      "0",
+                ),
+                cover:
+                    ele.querySelector('img.cover')?.attributes['data-src'] ??
+                    "not found",
+              );
+            })
+            .toList();
     return dramas;
   }
 
@@ -103,7 +111,7 @@ class DramaList {
         return '/shows/popular';
       case DramaCatalog.varietyShows:
         return '/shows/variety';
-      case DramaCatalog.topDrams:
+      case DramaCatalog.topDramas:
         return '/shows/top';
       case DramaCatalog.topMovies:
         return '/movies/top';
@@ -119,7 +127,8 @@ class DramaList {
     int? page = 1,
   }) async {
     var endpoint = _getEndpoint(catalog);
-    final response = await _dio.get('$baseUrl$endpoint&page=$page');
+    log("$baseUrl$endpoint?page=$page");
+    final response = await _dio.get('$baseUrl$endpoint?page=$page');
     if (response.statusCode == 200) {
       final data = response.data;
       return _cardScapper(data);
@@ -200,11 +209,10 @@ class DramaList {
         if (e.text.trim().contains("Native")) {
           drama.originalTitle = e.text.trim().split(":").last.trim();
         } else if (e.text.trim().contains("Also Known As:")) {
+          var index = e.text.indexOf(":");
           drama.altTitles =
               e.text
-                  .trim()
-                  .split(":")
-                  .last
+                  .substring(index + 1)
                   .trim()
                   .split(",")
                   .map((e) => e.trim())
